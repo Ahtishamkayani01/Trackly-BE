@@ -4,7 +4,14 @@ import cookieParser from "cookie-parser";
 import dns from "dns";
 import { connectDB } from "./db/db.js";
 import userRoute from "./routes/userRoutes.js";
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
+// Custom DNS resolvers are only needed to work around some local ISP setups
+// that fail to resolve mongodb+srv SRV records. On Vercel this can instead
+// break DNS resolution, since outbound queries to arbitrary DNS servers may
+// be restricted in the serverless sandbox.
+if (!process.env.VERCEL) {
+  dns.setServers(["1.1.1.1", "8.8.8.8"]);
+}
 
 const app = express();
 
@@ -17,7 +24,8 @@ app.use(async (_req, res, next) => {
     await connectDB();
     next();
   } catch (error) {
-    res.status(500).json({ message: "Database connection failed" });
+    console.error("Database connection failed:", error.message);
+    res.status(500).json({ message: "Database connection failed", detail: error.message });
   }
 });
 
