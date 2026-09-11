@@ -33,6 +33,7 @@ export const Login = async (req, res) => {
       .send({
         message: "Login successful",
         success: true,
+        token,
       });
   } catch (error) {
     res.send({ message: error.message });
@@ -78,6 +79,7 @@ export const Signup = async (req, res) => {
       .send({
         message: "User created successfully",
         success: true,
+        token,
       });
   } catch (error) {
     res.send({ message: error.message, success: false });
