@@ -1,5 +1,6 @@
 import "dotenv/config.js";
 import express from "express";
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import dns from "dns";
 import { connectDB } from "./db/db.js";
@@ -15,7 +16,21 @@ if (!process.env.VERCEL) {
 
 const app = express();
 
+// CLIENT_URL supports a comma-separated list (e.g. local dev + deployed
+// frontend). Falls back to common localhost dev ports if unset.
+const allowedOrigins = (
+  process.env.CLIENT_URL || "http://localhost:3000,http://localhost:5173"
+)
+  .split(",")
+  .map((origin) => origin.trim());
+
 ///Important Middleware
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 

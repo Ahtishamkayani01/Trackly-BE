@@ -27,6 +27,8 @@ export const Login = async (req, res) => {
     res
       .cookie("token", token, {
         httpOnly: true,
+        secure: !!process.env.VERCEL,
+        sameSite: process.env.VERCEL ? "none" : "lax",
       })
       .send({
         message: "Login successful",
@@ -70,6 +72,8 @@ export const Signup = async (req, res) => {
     return res
       .cookie("token", token, {
         httpOnly: true,
+        secure: !!process.env.VERCEL,
+        sameSite: process.env.VERCEL ? "none" : "lax",
       })
       .send({
         message: "User created successfully",
