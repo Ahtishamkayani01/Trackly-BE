@@ -56,6 +56,16 @@ from code:
 1. **Environment Variables** — Project → Settings → Environment Variables → add:
    - `MONGO_URL`
    - `JWT_SECRET`
+   - `CLIENT_URL` — the deployed frontend's origin(s), comma-separated if more
+     than one, e.g.:
+     ```
+     CLIENT_URL=https://trackly-fe-git-main-ahtishamkayani01s-projects.vercel.app
+     ```
+     This is a Vercel git-branch preview URL, so it changes if the branch/repo
+     naming changes — update this value if that happens. Without it, the
+     backend's CORS allowlist only contains localhost dev ports and every
+     request from the deployed frontend is rejected with a CORS error (see
+     "CORS error calling the API from the frontend" below).
 
    Set them for all environments you test (Production/Preview/Development), then
    redeploy.

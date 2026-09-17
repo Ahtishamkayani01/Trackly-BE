@@ -1,8 +1,8 @@
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import dns from "dns";
 import "dotenv/config.js";
 import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import dns from "dns";
 import { connectDB } from "./db/db.js";
 import userRoute from "./routes/userRoutes.js";
 
@@ -12,6 +12,7 @@ import userRoute from "./routes/userRoutes.js";
 // be restricted in the serverless sandbox.
 if (!process.env.VERCEL) {
   dns.setServers(["1.1.1.1", "8.8.8.8"]);
+    dns.setDefaultResultOrder("ipv4first");
 }
 
 const app = express();
@@ -47,7 +48,6 @@ app.use(async (_req, res, next) => {
 app.use("/api/user", userRoute);
 
 const PORT = process.env.PORT || 8000;
-
 // On Vercel the app is imported as a serverless handler, not run directly —
 // only start a listening server for local/traditional hosting.
 if (!process.env.VERCEL) {

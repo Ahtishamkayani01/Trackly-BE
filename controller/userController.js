@@ -1,6 +1,8 @@
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import user from "../model/userModel.js";
+import sendEmail from "../utils/sendEmail.js";
 
 const cookieOptions = {
   httpOnly: true,
@@ -86,11 +88,145 @@ export const Logout = (_req, res) => {
   });
 };
 
+export const ForgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body();
+    if (!email) {
+      return res.status(400).send({
+        message: "Email is required",
+        success: false,
+      });
+    }
+
+    const existingUser = await user.findOne({ email });
+    if (!existingUser) {
+      return res.send({
+        message:
+          "If an account exists with this email, a reset link has been sent.",
+        success: true,
+      });
+    }
+
+    //Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    //Store hash password in Db
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    existingUser.resetPasswordToken = hashedToken;
+    //Token expires in 15 min
+    existingUser.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    await existingUser.save();
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    const html = `
+      <h2>Reset your Trackly password</h2>
+
+      <p>You requested to reset your password.</p>
+
+      <p>Click the button below to reset it:</p>
+
+      <a
+        href="${resetUrl}"
+        style="
+          display: inline-block;
+          padding: 12px 20px;
+          background: #000;
+          color: #fff;
+          text-decoration: none;
+          border-radius: 6px;
+        "
+      >
+        Reset Password
+      </a>
+
+      <p>This link will expire in 15 minutes.</p>
+
+      <p>If you didn't request a password reset, you can ignore this email.</p>
+    `;
+
+    await sendEmail(existingUser.email, "Reset your Trackly password", html);
+
+    return res.send({
+      message:
+        "If an account exists with this email, a reset link has been sent.",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+
+    return res.status(500).send({
+      message: "Something went wrong",
+      success: false,
+    });
+  }
+};
+
+export const ResetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = res.body;
+
+    if (!token || !password) {
+      return res.status(400).send({
+        message: "Token and password are required",
+        success: false,
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).send({
+        message: "Password must be at least 8 characters",
+        success: false,
+      });
+    }
+
+    //Has token recieved from frontend
+    const hasToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const existingUser = await user.findOne({
+      resetPasswordToken: hasToken,
+      resetPasswordExpires: { $gt: Date.now(I) },
+    });
+    if (!existingUser) {
+      return res.status(400).send({
+        message: "Reset token is invalid or expired",
+        success: false,
+      });
+    }
+
+    const hashedPassword = bcrypt.hash(password, 10);
+    existingUser.password = hashedPassword;
+
+    //Delete reset token after successfull reset
+    existingUser.resetPasswordToken = undefined;
+    existingUser.resetPasswordExpires = undefined;
+
+    await existingUser.save();
+    return res.send({
+      message: "Password reset successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+
+    return res.status(500).send({
+      message: "Something went wrong",
+      success: false,
+    });
+  }
+};
+
 export const Me = async (req, res) => {
   try {
     const existingUser = await user.findById(req.userId).select("-password");
     if (!existingUser) {
-      return res.status(404).send({ message: "User not found", success: false });
+      return res
+        .status(404)
+        .send({ message: "User not found", success: false });
     }
     res.send({ success: true, user: existingUser });
   } catch (error) {
