@@ -90,7 +90,7 @@ export const Logout = (_req, res) => {
 
 export const ForgotPassword = async (req, res) => {
   try {
-    const { email } = req.body();
+    const { email } = req.body;
     if (!email) {
       return res.status(400).send({
         message: "Email is required",
