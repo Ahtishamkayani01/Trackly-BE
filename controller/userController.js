@@ -198,7 +198,7 @@ export const ResetPassword = async (req, res) => {
       });
     }
 
-    const hashedPassword = bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     existingUser.password = hashedPassword;
 
     //Delete reset token after successfull reset
